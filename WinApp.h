@@ -11,7 +11,7 @@ public: // メンバ関数
 	// 初期化
 	void Initialize();
 	// 更新
-	void Update();
+	bool Update();
 
 	//終了
 	void Finalize();
@@ -28,4 +28,7 @@ public:
 private:
 	HWND hwnd;
 	WNDCLASSEX w{};
+
+
+	MSG msg{};  // メッセージ
 };
