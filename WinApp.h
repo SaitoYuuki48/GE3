@@ -13,6 +13,9 @@ public: // メンバ関数
 	// 更新
 	void Update();
 
+	//終了
+	void Finalize();
+
 	//Getter
 	HWND GetHwnd() const { return hwnd; }
 	HINSTANCE GetHInstance()const { return w.hInstance; }

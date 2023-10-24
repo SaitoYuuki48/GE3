@@ -4,6 +4,7 @@
 #define DIRECTINPUT_VERSION     0x0800   // DirectInputのバージョン指定
 #include <dinput.h>
 #include <wrl.h>
+#include "WinApp.h"
 
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -12,7 +13,7 @@ class Input
 {
 public: //メンバ関数
 	//初期化
-	void Initialize(HINSTANCE hInstance,HWND hwnd);
+	void Initialize(WinApp* winApp);
 
 	//更新
 	void Update();
@@ -36,6 +37,8 @@ public:
 	bool TriggerKey(BYTE keyNumber);
 
 private: //メンバ変数
+	WinApp* winApp_ = nullptr;
+
 	// キーボードのデバイス
 	ComPtr<IDirectInputDevice8> keyboard;
 	//Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard;
