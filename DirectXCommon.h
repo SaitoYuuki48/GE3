@@ -17,6 +17,11 @@ public: // メンバ関数
 	// 初期化
 	void Initialize(WinApp* winApp);
 
+	//描画前処理
+	void PreDraw();
+	//描画後処理
+	void PostDraw();
+
 private:
 	//デバイス
 	void DeviceInitialize();
@@ -30,6 +35,8 @@ private:
 	void DepthBufferInitialize();
 	//フェンス
 	void FenceInitialize();
+
+	
 
 private:
 	WinApp* winApp_ = nullptr;
@@ -56,4 +63,6 @@ private:
 	//フェンス
 	ComPtr<ID3D12Fence> fence;
 	UINT64 fenceVal = 0;
+	//描画前処理
+	D3D12_RESOURCE_BARRIER barrierDesc{};
 };
