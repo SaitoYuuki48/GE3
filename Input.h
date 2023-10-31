@@ -11,6 +11,10 @@
 
 class Input
 {
+private:
+	//namespace省略
+	template <class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+
 public: //メンバ関数
 	//初期化
 	void Initialize(WinApp* winApp);
@@ -19,9 +23,6 @@ public: //メンバ関数
 	void Update();
 
 public:
-	//namespace省略
-	template <class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
-
 	/// <summary>
 	/// キーの押下をチェック
 	/// </summary>
