@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 
 #include <vector>
+#include <chrono>
 
 #include "WinApp.h"
 
@@ -40,7 +41,11 @@ private:
 	//フェンス
 	void FenceInitialize();
 
-	
+
+	//FPS固定初期化処理
+	void InitializeFixFPS();
+	//FPS固定更新処理
+	void UpdataFixFPS();
 
 private:
 	WinApp* winApp_ = nullptr;
@@ -69,4 +74,7 @@ private:
 	UINT64 fenceVal = 0;
 	//描画前処理
 	D3D12_RESOURCE_BARRIER barrierDesc{};
+
+	//記録用時間計測の変数
+	std::chrono::steady_clock::time_point reference_;
 };
