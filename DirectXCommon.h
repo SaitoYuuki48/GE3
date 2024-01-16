@@ -41,6 +41,9 @@ private:
 	//フェンス
 	void FenceInitialize();
 
+	//ディスクリプタヒープ
+	ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+
 
 	//FPS固定初期化処理
 	void InitializeFixFPS();
@@ -77,4 +80,10 @@ private:
 
 	//記録用時間計測の変数
 	std::chrono::steady_clock::time_point reference_;
+
+	//ディスクリプタヒープ
+	//RTV (ゲーム画面を保存しておく)
+	ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
+	//SRV (画像などを保存しておくもの)
+	ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap;
 };

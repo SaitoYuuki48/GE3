@@ -29,6 +29,20 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 	D3D12_ROOT_SIGNATURE_DESC descriptorRootSignature{};
 	descriptorRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
+	//RootParameter作成。PixelShaderのMaterialとVertexShaderのTransform
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	//色
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; //CBVを使う
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderを使う
+	rootParameters[0].Descriptor.ShaderRegister = 0; //レジスタ番号0を使う
+	//行列
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; //CBVで使う
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; //VertexShaderで使う
+	rootParameters[1].Descriptor.ShaderRegister = 0; //レジスタ番号0を使う
+
+	descriptorRootSignature.pParameters = rootParameters; //ルートパラメータへのポインタ
+	descriptorRootSignature.NumParameters = _countof(rootParameters); //配列の長さ
+
 	//シリアライズしてバイナリにする
 	ComPtr<ID3D10Blob> signatureBlob;
 	ComPtr<ID3D10Blob> errorBlob;
