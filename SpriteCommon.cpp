@@ -1,7 +1,6 @@
 #include "SpriteCommon.h"
 #include <cassert>
 
-
 #pragma comment(lib,"dxcompiler.lib")
 
 using namespace Microsoft::WRL;
@@ -29,8 +28,16 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 	D3D12_ROOT_SIGNATURE_DESC descriptorRootSignature{};
 	descriptorRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
+	//画像用のディスクリプタ範囲
+	//DescriptorRange
+	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
+	descriptorRange[0].BaseShaderRegister = 0; //0から始まる
+	descriptorRange[0].NumDescriptors = 1; //数は1つ
+	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; //SRVを使う
+	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; //Offsetを自動計算
+
 	//RootParameter作成。PixelShaderのMaterialとVertexShaderのTransform
-	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	D3D12_ROOT_PARAMETER rootParameters[3] = {};
 	//色
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; //CBVを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderを使う
@@ -39,10 +46,29 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; //CBVで使う
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; //VertexShaderで使う
 	rootParameters[1].Descriptor.ShaderRegister = 0; //レジスタ番号0を使う
+	//画像
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; //DescriptorTableを使う
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
+	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange;  //Tableの中身
+	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); //Tableで利用する数
 
 	descriptorRootSignature.pParameters = rootParameters; //ルートパラメータへのポインタ
 	descriptorRootSignature.NumParameters = _countof(rootParameters); //配列の長さ
 
+	//Samplerの設定
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
+	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; //バイリニアフィルタ
+	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; //0~1の範囲外をリピート
+	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; //比較しない
+	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX; //ありったけのMipmapを使う
+	staticSamplers[0].ShaderRegister = 0;  //レジスタ番号0を使う
+	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
+
+	descriptorRootSignature.pStaticSamplers = staticSamplers;
+	descriptorRootSignature.NumStaticSamplers = _countof(staticSamplers);
+	
 	//シリアライズしてバイナリにする
 	ComPtr<ID3D10Blob> signatureBlob;
 	ComPtr<ID3D10Blob> errorBlob;
@@ -56,11 +82,17 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 	assert(SUCCEEDED(result));
 
 	//InputLayout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[1].SemanticName = "TEXCOORD";
+	inputElementDescs[1].SemanticIndex = 0;
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
 	inputLayoutDesc.NumElements = _countof(inputElementDescs);
@@ -105,6 +137,43 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 	//生成
 	result = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState));
 	assert(SUCCEEDED(result));
+}
+
+DirectX::ScratchImage SpriteCommon::LoadTexture(const std::wstring& filePath)
+{
+	//テクスチャファイルを読んでプログラムで扱えるようにする
+	DirectX::ScratchImage image{};
+	HRESULT result = DirectX::LoadFromWICFile(filePath.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	assert(SUCCEEDED(result));
+
+	//ミップマップの作成
+	DirectX::ScratchImage mipImages{};
+	result = DirectX::GenerateMipMaps(
+		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+		DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	assert(SUCCEEDED(result));
+
+	return image;
+}
+
+void SpriteCommon::UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages)
+{
+	//Mata情報を取得
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+	//全MipMapについて
+	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
+		//MipMapLevelを指定して各Imageを取得
+		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
+		//Textureに転送
+		HRESULT result = texture->WriteToSubresource(
+			UINT(mipLevel),
+			nullptr, //全領域へコピー
+			img->pixels, //元データアドレス
+			UINT(img->rowPitch), //1ラインサイズ
+			UINT(img->slicePitch) //1枚サイズ
+		);
+		assert(SUCCEEDED(result));
+	}
 }
 
 IDxcBlob* SpriteCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler)
