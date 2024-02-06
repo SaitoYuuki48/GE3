@@ -133,7 +133,8 @@ void TextureManager::UploadTextureData(ID3D12Resource* texture, const DirectX::S
 		//MipMapLevelを指定して各Imageを取得
 		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
 		//Textureに転送
-		HRESULT result = texture->WriteToSubresource(
+		HRESULT result;
+		result = texture->WriteToSubresource(
 			UINT(mipLevel),
 			nullptr, //全領域へコピー
 			img->pixels, //元データアドレス
