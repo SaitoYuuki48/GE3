@@ -147,43 +147,6 @@ void SpriteCommon::SpritePreDraw()
 	dxCommon_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-DirectX::ScratchImage SpriteCommon::LoadTexture(const std::wstring& filePath)
-{
-	//テクスチャファイルを読んでプログラムで扱えるようにする
-	DirectX::ScratchImage image{};
-	HRESULT result = DirectX::LoadFromWICFile(filePath.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	assert(SUCCEEDED(result));
-
-	//ミップマップの作成
-	DirectX::ScratchImage mipImages{};
-	result = DirectX::GenerateMipMaps(
-		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
-		DirectX::TEX_FILTER_SRGB, 0, mipImages);
-	assert(SUCCEEDED(result));
-
-	return image;
-}
-
-void SpriteCommon::UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages)
-{
-	//Mata情報を取得
-	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-	//全MipMapについて
-	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
-		//MipMapLevelを指定して各Imageを取得
-		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
-		//Textureに転送
-		HRESULT result = texture->WriteToSubresource(
-			UINT(mipLevel),
-			nullptr, //全領域へコピー
-			img->pixels, //元データアドレス
-			UINT(img->rowPitch), //1ラインサイズ
-			UINT(img->slicePitch) //1枚サイズ
-		);
-		assert(SUCCEEDED(result));
-	}
-}
-
 IDxcBlob* SpriteCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler)
 {
 	HRESULT result{};

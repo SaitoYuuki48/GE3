@@ -39,7 +39,7 @@ private:
 
 public:
 	// 初期化
-	void Initialize(SpriteCommon* common);
+	void Initialize(SpriteCommon* common, std::wstring textureFilePath);
 
 	//更新処理
 	void Update();
@@ -57,6 +57,8 @@ public:
 	void SetRotation(float rot) { rotation = rot; }
 	void SetColor(Vector4 color) { color_ = color; }
 	void SetSize(Vector2 size) { this->size_ = size; }
+
+	void SetTexture(std::wstring textureFilePath);
 
 private:
 	//頂点情報作成
@@ -91,9 +93,6 @@ private:
 	ComPtr<ID3D12Resource> wvpResource;
 	Matrix4x4* wvpData = nullptr;
 
-	//画像の保存先のアドレス
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU;
-
 	//パラメータ
 	Vector4 color_ = { 1.0f,1.0f,1.0f,1.0f };
 	//UV座標
@@ -103,7 +102,10 @@ private:
 	Transform transform = { {1,1,1},{0,0,0},{0,0,0} }; // Scale Rotate Translate
 	Vector2 position = { 0.0f,0.0f };
 	float rotation = 0;
-	Vector2 size_ = { 1.0f,1.0f };
+	Vector2 size_ = { 512.0f,512.0f };
+
+	//画像の保存されている場所
+	uint32_t textureIndex_ = 0;
 
 	//カメラ
 	Transform cameraTransform = { {1,1,1},{0,0,0},{0,0,-10} };
