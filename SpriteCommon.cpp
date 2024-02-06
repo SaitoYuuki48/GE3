@@ -139,6 +139,14 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 	assert(SUCCEEDED(result));
 }
 
+void SpriteCommon::SpritePreDraw()
+{
+	dxCommon_->GetCommandList()->SetGraphicsRootSignature(GetRootSignature());
+	dxCommon_->GetCommandList()->SetPipelineState(GetPipelineState());
+	//形状を設定。
+	dxCommon_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
 DirectX::ScratchImage SpriteCommon::LoadTexture(const std::wstring& filePath)
 {
 	//テクスチャファイルを読んでプログラムで扱えるようにする
