@@ -53,10 +53,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         temp->Initialize(spriteCommon, L"Resources/mario.jpg");
         else if(i%2==1)
         temp->Initialize(spriteCommon, L"Resources/reimu.png");
-        temp->SetPosition({ (float)i * 120,0 });
+        temp->SetPosition({ (float)i * 120,100 });
         sprite.push_back(temp);
     }
-   
 
     // ゲームループ
     while (true) {
